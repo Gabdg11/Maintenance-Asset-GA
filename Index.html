@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GA PM & Mobile OB Integrated System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex h-screen overflow-hidden">
+
+    <!-- Sidebar (Admin GA) -->
+    <aside id="adminSidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex">
+        <div>
+            <div class="p-4 border-b border-slate-800 flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg font-bold"><i class="fa-solid fa-building-shield"></i></div>
+                <div>
+                    <h1 class="font-bold text-white text-sm">GA Management</h1>
+                    <p class="text-[10px] text-slate-400">Asset & Maintenance System</p>
+                </div>
+            </div>
+            <nav class="p-4 space-y-1 text-sm">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full text-left px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium flex items-center space-x-3"><i class="fa-solid fa-chart-pie w-5"></i><span>Dasbor GA</span></button>
+                <button onclick="switchTab('assets')" id="nav-assets" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-boxes-stacked w-5"></i><span>Daftar Aset</span></button>
+                <button onclick="switchTab('offices')" id="nav-offices" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-map-location-dot w-5"></i><span>17 Kantor</span></button>
+                <button onclick="switchTab('pm')" id="nav-pm" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-calendar-check w-5"></i><span>Inspeksi & PM</span></button>
+                <button onclick="switchTab('repair')" id="nav-repair" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-triangle-exclamation w-5"></i><span>Tugas Perbaikan</span></button>
+                <button onclick="switchTab('reports')" id="nav-reports" class="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-file-lines w-5"></i><span>Laporan & Log</span></button>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+            <span>Role: Admin GA</span>
+            <button onclick="resetSystemData()" class="text-rose-400 hover:underline" title="Reset Data Sistem"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Top Navbar with Mode Switcher -->
+        <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center space-x-3">
+                <h2 id="pageTitle" class="font-bold text-slate-800 text-lg">Dasbor GA & Statistik</h2>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="bg-slate-100 p-1 rounded-lg flex space-x-1 border border-slate-200">
+                    <button onclick="setAppMode('admin')" id="modeBtnAdmin" class="px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white transition shadow-sm"><i class="fa-solid fa-desktop mr-1"></i> Mode Admin GA</button>
+                    <button onclick="setAppMode('mobile_ob')" id="modeBtnOB" class="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"><i class="fa-solid fa-mobile-screen-button mr-1"></i> Mode Mobile OB</button>
+                </div>
+                <span class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1 text-emerald-500 animate-pulse"></i> Real-Time Sync</span>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Panels (Admin GA) -->
+        <main id="adminMainContent" class="flex-1 overflow-y-auto p-6 bg-slate-50">
+            
+            <!-- PANEL: DASHBOARD -->
+            <section id="panel-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-blue-50 text-blue-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Total Aset Terdaftar</p>
+                            <h3 id="statTotalAssets" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-emerald-50 text-emerald-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Kondisi Baik</p>
+                            <h3 id="statGoodAssets" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-amber-50 text-amber-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Servis Jatuh Tempo</p>
+                            <h3 id="statDueService" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-rose-50 text-rose-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Tiket Perbaikan Aktif</p>
+                            <h3 id="statActiveRepairs" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-4 text-sm"><i class="fa-solid fa-bolt text-blue-600 mr-2"></i>Aktivitas Terbaru Sistem</h3>
+                    <div id="dashboardRecentActivity" class="space-y-2 text-sm text-slate-600">
+                        <p class="text-slate-400 text-sm">Belum ada aktivitas masuk.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: ASSETS -->
+            <section id="panel-assets" class="space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Master Data Aset Kantor</h3>
+                    <button onclick="openAddAssetModal()" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Tambah Aset</button>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Kode / Nama Aset</th>
+                                <th class="p-3">Lokasi Kantor</th>
+                                <th class="p-3">Kategori</th>
+                                <th class="p-3">Kondisi</th>
+                                <th class="p-3">Jadwal Servis Berikutnya</th>
+                                <th class="p-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assetTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PANEL: OFFICES -->
+            <section id="panel-offices" class="space-y-4 hidden">
+                <h3 class="font-bold text-slate-800">Pemantauan 17 Kantor Cabang</h3>
+                <div id="officeCardsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </section>
+
+            <!-- PANEL: PM INSPECTION (DENGAN FILTER KANTOR) -->
+            <section id="panel-pm" class="space-y-4 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <h3 class="font-bold text-slate-800">Pusat Inspeksi & Preventive Maintenance (PM)</h3>
+                    <div class="w-full md:w-72">
+                        <select id="pmFilterOffice" onchange="renderAll()" class="w-full border border-slate-300 p-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium shadow-sm">
+                            <option value="ALL">-- Filter Kantor (Tampilkan Semua) --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <p class="text-xs text-slate-500">Pilih kondisi pada form inspeksi di bawah ini. Jika memerlukan perbaikan/sedot atau lewat jadwal, sistem otomatis memasukkannya ke Tugas Perbaikan:</p>
+                    <div id="pmInspectionList" class="space-y-4"></div>
+                </div>
+            </section>
+
+            <!-- PANEL: REPAIR TASKS -->
+            <section id="panel-repair" class="space-y-4 hidden">
+                <h3 class="font-bold text-slate-800">Tiket Tugas Perbaikan & Servis Rutin Aktif</h3>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Waktu Laporan</th>
+                                <th class="p-3">Aset & Lokasi</th>
+                                <th class="p-3">Kendala / Keterangan</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="repairTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PANEL: REPORTS -->
+            <section id="panel-reports" class="space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Pusat Laporan & Log Audit</h3>
+                    <button onclick="exportReportsCSV()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-sm"><i class="fa-solid fa-file-excel mr-1"></i> Ekspor CSV</button>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Waktu</th>
+                                <th class="p-3">Tipe</th>
+                                <th class="p-3">Aset</th>
+                                <th class="p-3">Lokasi</th>
+                                <th class="p-3">Petugas</th>
+                                <th class="p-3">Hasil / Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- PANEL: MOBILE OB VIEW (Real-time Connected) -->
+        <main id="mobileOBMainContent" class="flex-1 overflow-y-auto p-4 bg-slate-100 hidden">
+            <div class="max-w-md mx-auto space-y-4 pb-12">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-2xl shadow-md space-y-1">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-base"><i class="fa-solid fa-mobile-screen-button mr-2"></i>Mobile OB Lapangan</h3>
+                        <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">Terhubung Live</span>
+                    </div>
+                    <p class="text-xs text-blue-100">Silakan lakukan inspeksi atau laporkan temuan dari lokasi kantor.</p>
+                </div>
+
+                <!-- Filter Kantor untuk Mobile OB -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-semibold text-slate-700">Pilih Kantor Lokasi Anda:</label>
+                    <select id="obFilterOffice" onchange="renderMobileOBList()" class="w-full border border-slate-300 p-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="ALL">-- Tampilkan Semua 17 Kantor --</option>
+                    </select>
+                </div>
+
+                <!-- Daftar Aset untuk Diinspeksi oleh OB -->
+                <div class="space-y-3" id="mobileOBInspectionContainer"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Tambah Aset Manual -->
+    <div id="addAssetModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md space-y-4 shadow-xl">
+            <h3 class="font-bold text-slate-800 text-base border-b pb-2"><i class="fa-solid fa-plus-circle text-blue-600 mr-2"></i>Form Input Aset Baru</h3>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Kode Aset:</label>
+                    <input type="text" id="newCode" placeholder="Contoh: AC-KTG-002" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Nama Aset:</label>
+                    <input type="text" id="newName" placeholder="Contoh: AC Split Daikin 1.5 PK" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Lokasi Kantor:</label>
+                    <select id="newLocation" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Kategori Aset (Pilih atau Ketik Manual):</label>
+                    <input type="text" id="newCategory" list="categoryOptions" placeholder="Pilih dari daftar atau ketik kategori baru..." class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <datalist id="categoryOptions">
+                        <option value="Air Conditioner AC">
+                        <option value="Genset Portable">
+                        <option value="Genset">
+                        <option value="Motor Operasional">
+                        <option value="Mobil Operasional">
+                        <option value="Septic Tank">
+                        <option value="APAR / Pemadam">
+                        <option value="Pompa Air">
+                        <option value="CCTV & Elektronik">
+                        <option value="Komputer & Laptop">
+                        <option value="Printer & Scanner">
+                        <option value="Furniture Kantor">
+                    </datalist>
+
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" onclick="selectQuickCategory('Air Conditioner AC', '3')" class="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-md font-medium transition flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-check text-[10px]"></i><span>Air Conditioner AC</span>
+                        </button>
+                        <button type="button" onclick="selectQuickCategory('Genset Portable', '3')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md font-medium transition">
+                            Genset Portable
+                        </button>
+                        <button type="button" onclick="selectQuickCategory('Genset', '6')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md font-medium transition">
+                            Genset
+                        </button>
+                        <button type="button" onclick="selectQuickCategory('Motor Operasional', '3')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md font-medium transition">
+                            Motor Operasional
+                        </button>
+                        <button type="button" onclick="selectQuickCategory('Mobil Operasional', '6')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md font-medium transition">
+                            Mobil Operasional
+                        </button>
+                        <button type="button" onclick="selectQuickCategory('Septic Tank', '3')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-md font-medium transition">
+                            Septic Tank
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Jatuh Tempo Servis Rutin:</label>
+                    <select id="newServiceInterval" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="auto">Otomatis Sesuai Kategori / Standar</option>
+                        <option value="3">3 Bulan Sekali</option>
+                        <option value="6">6 Bulan Sekali</option>
+                        <option value="none">Tidak Perlu / Tanpa Jadwal Rutin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Tanggal Mulai / Perawatan Terakhir:</label>
+                    <input type="date" id="newDate" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="closeAddAssetModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition">Batal</button>
+                <button type="button" onclick="handleSaveAsset()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition">Simpan Aset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Aplikasi Terhubung Real-Time -->
+    <script>
+        const allOfficesList = [
+            'Karang Tinggal 27', 'Aruman Cimahi', 'Cipadung', 'Baleendah',
+            'BN 1', 'BN 2', 'BN 3', 'Cifor', 'Bango',
+            'SO Tasikmalaya', 'SO Cirebon', 'SO Karawang', 'SO Depok',
+            'SO Bekasi Kota', 'SO Bekasi Kabupaten', 'SO Tangerang Selatan', 'SO Tangerang Kota'
+        ];
+
+        let memoryStore = {
+            ga_assets: [
+                { code: 'AC-KTG-001', name: 'AC Split 2PK', location: 'Karang Tinggal 27', category: 'Air Conditioner AC', condition: 'Baik', nextDate: '2026-11-24' },
+                { code: 'ST-KTG-001', name: 'Septic Tank Utama', location: 'Karang Tinggal 27', category: 'Septic Tank', condition: 'Baik', nextDate: '2026-11-24' }
+            ],
+            ga_all_reports: [
+                { timestamp: '24/08/2026, 09:15:00', type: 'INSPECTION', assetCode: 'AC-KTG-001', assetName: 'AC Split 2PK', location: 'Karang Tinggal 27', inspector: 'Admin GA', result: 'Baik', note: 'Sistem diinisialisasi' }
+            ],
+            ga_repairs: []
+        };
+
+        let globalAssets = [];
+        let globalReports = [];
+        let globalRepairs = [];
+        let currentMode = 'admin';
+
+        function setAppMode(mode) {
+            currentMode = mode;
+            const adminMain = document.getElementById('adminMainContent');
+            const mobileOBMain = document.getElementById('mobileOBMainContent');
+            const adminSidebar = document.getElementById('adminSidebar');
+            const btnAdmin = document.getElementById('modeBtnAdmin');
+            const btnOB = document.getElementById('modeBtnOB');
+            const pageTitle = document.getElementById('pageTitle');
+
+            if (mode === 'admin') {
+                adminMain.classList.remove('hidden');
+                mobileOBMain.classList.add('hidden');
+                adminSidebar.classList.remove('hidden');
+                btnAdmin.className = "px-3 py-1.5 rounded-md text-xs font-bold bg-blue-600 text-white transition shadow-sm";
+                btnOB.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
+                pageTitle.innerText = "Dasbor GA & Statistik";
+                renderAll();
+            } else {
+                adminMain.classList.add('hidden');
+                mobileOBMain.classList.remove('hidden');
+                adminSidebar.classList.add('hidden');
+                btnOB.className = "px-3 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white transition shadow-sm";
+                btnAdmin.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition";
+                pageTitle.innerText = "Mobile OB (Petugas Lapangan)";
+                renderMobileOBList();
+            }
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'assets', 'offices', 'pm', 'repair', 'reports'].forEach(id => {
+                const panel = document.getElementById(`panel-${id}`);
+                const nav = document.getElementById(`nav-${id}`);
+                if (panel) panel.classList.add('hidden');
+                if (nav) nav.className = "w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3";
+            });
+            
+            const activePanel = document.getElementById(`panel-${tabId}`);
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activePanel) activePanel.classList.remove('hidden');
+            if (activeNav) activeNav.className = "w-full text-left px-3 py-2.5 rounded-lg bg-blue-600 text-white font-medium flex items-center space-x-3";
+            
+            const titles = {
+                dashboard: 'Dasbor GA & Statistik',
+                assets: 'Daftar Master Aset Kantor',
+                offices: 'Pemantauan 17 Kantor Cabang',
+                pm: 'Inspeksi & Preventive Maintenance',
+                repair: 'Tiket Perbaikan & Servis Rutin',
+                reports: 'Pusat Laporan & Log Audit'
+            };
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle && titles[tabId]) pageTitle.innerText = titles[tabId];
+        }
+
+        function selectQuickCategory(categoryName, intervalValue) {
+            document.getElementById('newCategory').value = categoryName;
+            document.getElementById('newServiceInterval').value = intervalValue;
+        }
+
+        function calculateNextServiceDate(category, baseDateStr, intervalChoice) {
+            let d = baseDateStr ? new Date(baseDateStr) : new Date();
+            if (isNaN(d.getTime())) d = new Date();
+
+            if (intervalChoice === '3') {
+                d.setMonth(d.getMonth() + 3);
+                return d.toISOString().split('T')[0];
+            } else if (intervalChoice === '6') {
+                d.setMonth(d.getMonth() + 6);
+                return d.toISOString().split('T')[0];
+            } else if (intervalChoice === 'none') {
+                return 'Tidak Ada / Sesuai Kebutuhan';
+            }
+
+            const catLower = category.toLowerCase();
+            if (catLower.includes('ac') || catLower.includes('air conditioner') || catLower.includes('genset portable') || catLower.includes('motor') || catLower.includes('septic')) {
+                d.setMonth(d.getMonth() + 3);
+            } else if (catLower.includes('genset') || catLower.includes('mobil')) {
+                d.setMonth(d.getMonth() + 6);
+            } else if (catLower.includes('apar') || catLower.includes('pemadam')) {
+                d.setFullYear(d.getFullYear() + 5);
+            } else {
+                return 'Tidak Ada / Sesuai Kebutuhan';
+            }
+            return d.toISOString().split('T')[0];
+        }
+
+        function loadData() {
+            try {
+                const savedAssets = localStorage.getItem('ga_assets');
+                const savedReports = localStorage.getItem('ga_all_reports');
+                const savedRepairs = localStorage.getItem('ga_repairs');
+
+                globalAssets = savedAssets ? JSON.parse(savedAssets) : memoryStore.ga_assets;
+                globalReports = savedReports ? JSON.parse(savedReports) : memoryStore.ga_all_reports;
+                globalRepairs = savedRepairs ? JSON.parse(savedRepairs) : memoryStore.ga_repairs;
+            } catch (e) {
+                globalAssets = memoryStore.ga_assets;
+                globalReports = memoryStore.ga_all_reports;
+                globalRepairs = memoryStore.ga_repairs;
+            }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            globalAssets.forEach(a => {
+                if (a.nextDate && a.nextDate !== 'Tidak Ada / Sesuai Kebutuhan' && a.nextDate <= todayStr) {
+                    const existingTask = globalRepairs.find(r => r.assetCode === a.code && r.status === 'Aktif' && r.note.includes('Jadwal Servis'));
+                    if (!existingTask) {
+                        globalRepairs.unshift({
+                            time: new Date().toLocaleString('id-ID'),
+                            assetCode: a.code,
+                            asset: a.name,
+                            location: a.location,
+                            note: `Jadwal Servis Rutin (${a.category}) telah tiba`,
+                            status: 'Aktif'
+                        });
+                    }
+                }
+            });
+        }
+
+        function saveData() {
+            memoryStore.ga_assets = globalAssets;
+            memoryStore.ga_all_reports = globalReports;
+            memoryStore.ga_repairs = globalRepairs;
+
+            try {
+                localStorage.setItem('ga_assets', JSON.stringify(globalAssets));
+                localStorage.setItem('ga_all_reports', JSON.stringify(globalReports));
+                localStorage.setItem('ga_repairs', JSON.stringify(globalRepairs));
+            } catch (e) {}
+        }
+
+        function resetSystemData() {
+            memoryStore.ga_assets = [
+                { code: 'AC-KTG-001', name: 'AC Split 2PK', location: 'Karang Tinggal 27', category: 'Air Conditioner AC', condition: 'Baik', nextDate: '2026-11-24' }
+            ];
+            memoryStore.ga_all_reports = [];
+            memoryStore.ga_repairs = [];
+            try { localStorage.clear(); } catch(e) {}
+            renderAll();
+            alert("Sistem berhasil direset.");
+        }
+
+        function renderAll() {
+            loadData();
+            
+            const totalAssetsEl = document.getElementById('statTotalAssets');
+            const goodAssetsEl = document.getElementById('statGoodAssets');
+            const dueServiceEl = document.getElementById('statDueService');
+            const activeRepairsEl = document.getElementById('statActiveRepairs');
+
+            if (totalAssetsEl) totalAssetsEl.innerText = globalAssets.length;
+            if (goodAssetsEl) goodAssetsEl.innerText = globalAssets.filter(a => a.condition === 'Baik').length;
+            if (dueServiceEl) dueServiceEl.innerText = globalAssets.filter(a => a.condition !== 'Baik').length;
+            if (activeRepairsEl) activeRepairsEl.innerText = globalRepairs.filter(r => r.status === 'Aktif').length;
+
+            const recentContainer = document.getElementById('dashboardRecentActivity');
+            if (recentContainer && globalReports.length > 0) {
+                recentContainer.innerHTML = globalReports.slice(0, 5).map(r => `
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">${r.assetName}</span> di <span class="text-blue-600">${r.location}</span> (${r.inspector})
+                            <p class="text-slate-500 italic mt-0.5">"${r.note}"</p>
+                        </div>
+                        <span class="px-2 py-1 rounded text-[10px] font-bold ${r.result.includes('Baik') || r.result.includes('Selesai') || r.result.includes('Terdaftar') ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${r.result}</span>
+                    </div>
+                `).join('');
+            }
+
+            const assetTableBody = document.getElementById('assetTableBody');
+            if (assetTableBody) {
+                assetTableBody.innerHTML = globalAssets.map((a, index) => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3"><span class="font-semibold text-slate-800">${a.name}</span><br><span class="text-xs text-slate-400">${a.code}</span></td>
+                        <td class="p-3 text-slate-600">${a.location}</td>
+                        <td class="p-3 text-slate-600">${a.category}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${a.condition}</span></td>
+                        <td class="p-3 text-slate-600 font-medium">${a.nextDate}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="deleteAsset(${index})" class="px-2.5 py-1 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded text-xs font-semibold transition" title="Hapus Aset"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const officeCardsGrid = document.getElementById('officeCardsGrid');
+            if (officeCardsGrid) {
+                officeCardsGrid.innerHTML = allOfficesList.map(off => {
+                    const count = globalAssets.filter(a => a.location === off).length;
+                    return `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                            <h4 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-building text-blue-600 mr-2"></i>${off}</h4>
+                            <p class="text-xs text-slate-500">Jumlah Aset Terdaftar: <strong class="text-slate-800">${count} unit</strong></p>
+                            <span class="inline-block text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">Status: Operasional Normal</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Populate PM Filter Office dropdown
+            const pmFilter = document.getElementById('pmFilterOffice');
+            if (pmFilter && pmFilter.children.length <= 1) {
+                pmFilter.innerHTML = `<option value="ALL">-- Filter Kantor (Tampilkan Semua) --</option>` + allOfficesList.map(off => `<option value="${off}">${off}</option>`).join('');
+            }
+            const selectedPmOffice = pmFilter ? pmFilter.value : 'ALL';
+
+            // Render PM Inspection dengan Filter Kantor
+            const pmInspectionList = document.getElementById('pmInspectionList');
+            if (pmInspectionList) {
+                let assetsToInspect = globalAssets;
+                if (selectedPmOffice !== 'ALL') {
+                    assetsToInspect = globalAssets.filter(a => a.location === selectedPmOffice);
+                }
+
+                const groupedByOffice = {};
+                assetsToInspect.forEach((a) => {
+                    const realIndex = globalAssets.findIndex(item => item.code === a.code);
+                    if (!groupedByOffice[a.location]) {
+                        groupedByOffice[a.location] = [];
+                    }
+                    groupedByOffice[a.location].push({ ...a, originalIndex: realIndex });
+                });
+
+                const officeKeys = Object.keys(groupedByOffice);
+                if (officeKeys.length === 0) {
+                    pmInspectionList.innerHTML = `<div class="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-400 text-xs">Tidak ada aset terdaftar pada filter kantor ini.</div>`;
+                } else {
+                    pmInspectionList.innerHTML = officeKeys.map(officeName => {
+                        const assetsInOffice = groupedByOffice[officeName];
+                        return `
+                            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <div class="bg-slate-100 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                                    <h4 class="font-bold text-slate-800 text-sm flex items-center">
+                                        <i class="fa-solid fa-building text-blue-600 mr-2"></i>${officeName}
+                                    </h4>
+                                    <span class="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-semibold">${assetsInOffice.length} Aset</span>
+                                </div>
+                                <div class="p-4 space-y-3">
+                                    ${assetsInOffice.map(a => {
+                                        const index = a.originalIndex;
+                                        const isSeptic = a.category.toLowerCase().includes('septic tank');
+                                        return `
+                                            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <span class="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">${a.code}</span>
+                                                            <strong class="text-slate-800 text-sm">${a.name}</strong>
+                                                        </div>
+                                                        <div class="text-blue-600 font-medium mt-1">${a.category}</div>
+                                                        <div class="text-slate-500 mt-0.5">Jadwal Perawatan Berikutnya: <strong class="text-slate-700">${a.nextDate}</strong></div>
+                                                    </div>
+                                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${a.condition}</span>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200">
+                                                    <label class="font-medium text-slate-700">Hasil Inspeksi:</label>
+                                                    <select id="inspect-cond-${index}" class="border border-slate-300 rounded-lg p-1.5 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                                        ${isSeptic ? `
+                                                            <option value="Baik">Baik</option>
+                                                            <option value="Perlu di sedot">Perlu di sedot</option>
+                                                        ` : `
+                                                            <option value="Baik">Baik</option>
+                                                            <option value="Perlu perbaikan">Perlu perbaikan</option>
+                                                            <option value="Mati">Mati</option>
+                                                        `}
+                                                    </select>
+                                                    <input type="text" id="inspect-note-${index}" placeholder="Catatan inspeksi (opsional)..." class="flex-1 border border-slate-300 rounded-lg p-1.5 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]">
+                                                    <button onclick="submitInspection(${index}, 'Admin GA')" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Simpan & Proses</button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            const repairTableBody = document.getElementById('repairTableBody');
+            if (repairTableBody) {
+                if (globalRepairs.length === 0) {
+                    repairTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400 text-xs">Belum ada tugas perbaikan aktif.</td></tr>`;
+                } else {
+                    repairTableBody.innerHTML = globalRepairs.map((r, idx) => `
+                        <tr class="hover:bg-slate-50 text-xs">
+                            <td class="p-3 text-slate-500">${r.time}</td>
+                            <td class="p-3"><span class="font-semibold text-slate-800">${r.asset}</span><br><span class="text-slate-400">${r.location}</span></td>
+                            <td class="p-3 text-slate-600 italic">"${r.note}"</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${r.status === 'Aktif' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">${r.status}</span></td>
+                            <td class="p-3">
+                                ${r.status === 'Aktif' ? `<button onclick="resolveRepair(${idx})" class="px-2 py-1 bg-emerald-600 text-white rounded font-medium">Selesaikan</button>` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const reportsTableBody = document.getElementById('reportsTableBody');
+            if (reportsTableBody) {
+                reportsTableBody.innerHTML = globalReports.map(r => `
+                    <tr class="hover:bg-slate-50 text-xs">
+                        <td class="p-3 text-slate-500">${r.timestamp}</td>
+                        <td class="p-3"><span class="font-bold text-blue-600">${r.type}</span></td>
+                        <td class="p-3 font-semibold text-slate-800">${r.assetName}</td>
+                        <td class="p-3 text-slate-600">${r.location}</td>
+                        <td class="p-3 text-slate-600">${r.inspector}</td>
+                        <td class="p-3 text-slate-700">${r.result} <br><em class="text-slate-400">"${r.note}"</em></td>
+                    </tr>
+                `).join('');
+            }
+
+            const newLocSelect = document.getElementById('newLocation');
+            if (newLocSelect && newLocSelect.children.length === 0) {
+                newLocSelect.innerHTML = allOfficesList.map(off => `<option value="${off}">${off}</option>`).join('');
+            }
+            
+            const obFilter = document.getElementById('obFilterOffice');
+            if (obFilter && obFilter.children.length <= 1) {
+                obFilter.innerHTML = `<option value="ALL">-- Tampilkan Semua 17 Kantor --</option>` + allOfficesList.map(off => `<option value="${off}">${off}</option>`).join('');
+            }
+        }
+
+        function renderMobileOBList() {
+            loadData();
+            const container = document.getElementById('mobileOBInspectionContainer');
+            const selectedOffice = document.getElementById('obFilterOffice').value;
+
+            const filteredAssets = selectedOffice === 'ALL' 
+                ? globalAssets 
+                : globalAssets.filter(a => a.location === selectedOffice);
+
+            if (filteredAssets.length === 0) {
+                container.innerHTML = `<div class="bg-white p-6 rounded-xl text-center text-slate-400 text-xs shadow-sm">Tidak ada aset terdaftar pada kantor ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = filteredAssets.map((a) => {
+                const realIndex = globalAssets.findIndex(item => item.code === a.code);
+                const isSeptic = a.category.toLowerCase().includes('septic tank');
+
+                return `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 text-xs">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold text-[10px]">${a.location}</span>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <span class="font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${a.code}</span>
+                                    <h4 class="font-bold text-slate-800 text-sm">${a.name}</h4>
+                                </div>
+                                <p class="text-slate-500 mt-0.5">${a.category}</p>
+                            </div>
+                            <span class="px-2 py-0.5 rounded font-bold ${a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${a.condition}</span>
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <label class="block font-medium text-slate-700">Pilih Kondisi Lapangan:</label>
+                            <select id="ob-cond-${realIndex}" class="w-full border border-slate-300 rounded-lg p-2 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                ${isSeptic ? `
+                                    <option value="Baik">Baik</option>
+                                    <option value="Perlu di sedot">Perlu di sedot</option>
+                                ` : `
+                                    <option value="Baik">Baik</option>
+                                    <option value="Perlu perbaikan">Perlu perbaikan</option>
+                                    <option value="Mati">Mati</option>
+                                `}
+                            </select>
+                            <input type="text" id="ob-note-${realIndex}" placeholder="Catatan kondisi lapangan..." class="w-full border border-slate-300 rounded-lg p-2 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                            <button onclick="submitInspection(${realIndex}, 'Mobile OB')" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition shadow-sm">Kirim Laporan OB (Real-Time)</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function submitInspection(index, inspectorName) {
+            const asset = globalAssets[index];
+            const prefix = inspectorName === 'Admin GA' ? 'inspect' : 'ob';
+            const condSelect = document.getElementById(`${prefix}-cond-${index}`);
+            const noteInput = document.getElementById(`${prefix}-note-${index}`);
+            
+            const condition = condSelect.value;
+            const note = noteInput ? noteInput.value.trim() || 'Inspeksi lapangan' : 'Inspeksi rutin';
+            
+            asset.condition = condition;
+            
+            let reportResult = '';
+            let isRepairNeeded = false;
+            
+            if (condition === 'Baik') {
+                asset.nextDate = calculateNextServiceDate(asset.category, new Date(), 'auto');
+                reportResult = 'Baik & Normal';
+            } else if (condition === 'Perlu perbaikan' || condition === 'Mati' || condition === 'Perlu di sedot') {
+                reportResult = condition;
+                isRepairNeeded = true;
+            }
+
+            globalReports.unshift({
+                timestamp: new Date().toLocaleString('id-ID'),
+                type: 'INSPECTION',
+                assetCode: asset.code,
+                assetName: asset.name,
+                location: asset.location,
+                inspector: inspectorName,
+                result: reportResult,
+                note: note
+            });
+
+            if (isRepairNeeded) {
+                const existingActive = globalRepairs.find(r => r.assetCode === asset.code && r.status === 'Aktif');
+                if (!existingActive) {
+                    globalRepairs.unshift({
+                        time: new Date().toLocaleString('id-ID'),
+                        assetCode: asset.code,
+                        asset: asset.name,
+                        location: asset.location,
+                        note: `Inspeksi ${inspectorName}: ${condition} - "${note}"`,
+                        status: 'Aktif'
+                    });
+                }
+            }
+
+            saveData();
+            
+            if (currentMode === 'mobile_ob') {
+                renderMobileOBList();
+            } else {
+                renderAll();
+            }
+
+            alert(`✓ Laporan dari ${inspectorName} berhasil dikirim dan tersinkronisasi secara real-time!`);
+        }
+
+        function resolveRepair(idx) {
+            const repair = globalRepairs[idx];
+            if (repair) {
+                repair.status = 'Selesai';
+                
+                const asset = globalAssets.find(a => a.code === repair.assetCode);
+                if (asset) {
+                    asset.condition = 'Baik';
+                    asset.nextDate = calculateNextServiceDate(asset.category, new Date(), 'auto');
+                }
+
+                globalReports.unshift({
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    type: 'REPAIR_RESOLVED',
+                    assetCode: repair.assetCode || '-',
+                    assetName: repair.asset,
+                    location: repair.location,
+                    inspector: 'Admin GA',
+                    result: 'Perbaikan Selesai',
+                    note: 'Tugas perbaikan/servis telah diselesaikan'
+                });
+
+                saveData();
+                renderAll();
+                alert("✓ Tugas perbaikan telah diselesaikan.");
+            }
+        }
+
+        function openAddAssetModal() { 
+            const modal = document.getElementById('addAssetModal');
+            const dateInput = document.getElementById('newDate');
+            const intervalSelect = document.getElementById('newServiceInterval');
+            if (modal) {
+                modal.classList.remove('hidden'); 
+                modal.classList.add('flex'); 
+            }
+            if (dateInput) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            if (intervalSelect) {
+                intervalSelect.value = 'auto';
+            }
+        }
+
+        function closeAddAssetModal() { 
+            const modal = document.getElementById('addAssetModal');
+            if (modal) {
+                modal.classList.remove('flex'); 
+                modal.classList.add('hidden'); 
+            }
+        }
+        
+        function handleSaveAsset() {
+            try {
+                const codeInput = document.getElementById('newCode');
+                const nameInput = document.getElementById('newName');
+                const locationInput = document.getElementById('newLocation');
+                const categoryInput = document.getElementById('newCategory');
+                const intervalSelect = document.getElementById('newServiceInterval');
+                const dateInput = document.getElementById('newDate');
+
+                const code = codeInput.value.trim();
+                const name = nameInput.value.trim();
+                const location = locationInput.value;
+                const category = categoryInput.value.trim();
+                const intervalChoice = intervalSelect.value;
+                const inputDate = dateInput.value;
+
+                if (!code || !name) { 
+                    alert('Mohon isi Kode Aset dan Nama Aset terlebih dahulu!'); 
+                    return; 
+                }
+
+                if (!category) {
+                    alert('Mohon isi atau pilih Kategori Aset terlebih dahulu!');
+                    return;
+                }
+
+                const nextDate = calculateNextServiceDate(category, inputDate, intervalChoice);
+
+                globalAssets.push({ code, name, location, category, condition: 'Baik', nextDate });
+                
+                globalReports.unshift({
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    type: 'NEW_ASSET',
+                    assetCode: code,
+                    assetName: name,
+                    location: location,
+                    inspector: 'Admin GA',
+                    result: 'Terdaftar',
+                    note: `Ditambahkan ke kategori ${category}`
+                });
+
+                saveData();
+                closeAddAssetModal();
+                
+                codeInput.value = '';
+                nameInput.value = '';
+                categoryInput.value = '';
+
+                renderAll();
+                alert("✓ Aset baru berhasil disimpan!");
+            } catch (err) {
+                alert("Gagal menyimpan aset: " + err.message);
+            }
+        }
+
+        function deleteAsset(index) {
+            if(confirm("Apakah Anda yakin ingin menghapus aset ini dari sistem?")) {
+                globalAssets.splice(index, 1);
+                saveData();
+                renderAll();
+            }
+        }
+
+        function exportReportsCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Waktu,Tipe,Nama Aset,Lokasi,Petugas,Hasil\n";
+            globalReports.forEach(r => {
+                csvContent += `"${r.timestamp}","${r.type}","${r.assetName}","${r.location}","${r.inspector}","${r.result}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "laporan_ga_terhubung.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.addEventListener('storage', (e) => {
+            loadData();
+            if (currentMode === 'admin') {
+                renderAll();
+            } else {
+                renderMobileOBList();
+            }
+        });
+
+        window.onload = renderAll;
+    </script>
+</body>
+</html>
