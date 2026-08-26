@@ -205,15 +205,20 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        // ⚠️ GANTI KODE DI BAWAH DENGAN FIREBASE CONFIG MILIK ANDA (Dari Firebase Console)
-        const firebaseConfig = {
-            apiKey: "PASTE_API_KEY_ANDA_DI_SINI",
-            authDomain: "PASTE_AUTH_DOMAIN_DI_SINI",
-            databaseURL: "PASTE_DATABASE_URL_DI_SINI",
-            projectId: "PASTE_PROJECT_ID_DI_SINI",
-            storageBucket: "PASTE_STORAGE_BUCKET_DI_SINI",
-            messagingSenderId: "PASTE_SENDER_ID_DI_SINI",
-            appId: "PASTE_APP_ID_DI_SINI"
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDXtg5ZlYs3tiu7_rT-weEhrnN5fdvQI_A",
+  authDomain: "maintenance-asset-ga.firebaseapp.com",
+  databaseURL: "https://maintenance-asset-ga-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "maintenance-asset-ga",
+  storageBucket: "maintenance-asset-ga.firebasestorage.app",
+  messagingSenderId: "541304523220",
+  appId: "1:541304523220:web:23b407e5ddfe35d7dc2e41"};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+            
         };
 
         // Inisialisasi Firebase
