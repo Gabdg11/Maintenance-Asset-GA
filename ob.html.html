@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile OB - Portal Inspeksi Lapangan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SDK Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen p-4">
+
+    <div class="max-w-md mx-auto space-y-4 pb-12">
+        <!-- Mobile Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-5 rounded-2xl shadow-lg space-y-2">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-mobile-screen-button text-xl"></i>
+                    <h1 class="font-bold text-base">Mobile OB Lapangan</h1>
+                </div>
+                <span id="syncBadge" class="text-[10px] bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Sync Live
+                </span>
+            </div>
+            <p class="text-xs text-indigo-100">Silakan pilih kantor lokasi Anda dan lakukan inspeksi rutin/pelaporan kendala aset.</p>
+        </div>
+
+        <!-- Filter Kantor OB -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <i class="fa-solid fa-building-circle-check text-indigo-600 mr-1"></i> Lokasi Kantor Anda:
+            </label>
+            <select id="obFilterOffice" onchange="renderMobileOBList()" class="w-full border border-slate-300 p-2.5 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium">
+                <option value="ALL">-- Tampilkan Semua (17 Kantor) --</option>
+            </select>
+        </div>
+
+        <!-- Container Daftar Aset Inspeksi -->
+        <div class="space-y-3" id="mobileOBInspectionContainer"></div>
+    </div>
+
+    <script>
+        // ⚠️ MASUKKAN CONFIG FIREBASE ASLI ANDA DI SINI
+        const firebaseConfig = {
+            apiKey: "PASTE_API_KEY_DI_SINI",
+            authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://PASTE_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "PASTE_PROJECT_ID",
+            storageBucket: "PASTE_PROJECT_ID.appspot.com",
+            messagingSenderId: "PASTE_SENDER_ID",
+            appId: "PASTE_APP_ID"
+        };
+
+        const allOfficesList = [
+            'Karang Tinggal 27', 'Aruman Cimahi', 'Cipadung', 'Baleendah',
+            'BN 1', 'BN 2', 'BN 3', 'Cifor', 'Bango',
+            'SO Tasikmalaya', 'SO Cirebon', 'SO Karawang', 'SO Depok',
+            'SO Bekasi Kota', 'SO Bekasi Kabupaten', 'SO Tangerang Selatan', 'SO Tangerang Kota'
+        ];
+
+        // Data awal (fallback) agar tampilan tidak kosong saat belum ada koneksi
+        let globalAssets = [
+            { code: 'AC-KTG-001', name: 'AC Split 2PK', location: 'Karang Tinggal 27', category: 'Air Conditioner AC', condition: 'Baik', nextDate: '2026-11-24' },
+            { code: 'ST-KTG-001', name: 'Septic Tank Utama', location: 'Karang Tinggal 27', category: 'Septic Tank', condition: 'Baik', nextDate: '2026-11-24' }
+        ];
+        let globalReports = [];
+        let globalRepairs = [];
+        let db = null;
+
+        // Inisialisasi Firebase dengan proteksi Error handling
+        try {
+            if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "PASTE_API_KEY_DI_SINI") {
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+            }
+        } catch (e) {
+            console.warn("Firebase belum terkonfigurasi:", e);
+        }
+
+        function initApp() {
+            initDropdown();
+            renderMobileOBList(); // Tampilkan data langsung (no-delay)
+
+            // Jika Firebase aktif, dengarkan perubahan data realtime
+            if (db) {
+                db.ref('ga_data').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data && data.assets && data.assets.length > 0) {
+                        globalAssets = data.assets;
+                        globalReports = data.reports || [];
+                        globalRepairs = data.repairs || [];
+                    }
+                    renderMobileOBList();
+                });
+            }
+        }
+
+        function initDropdown() {
+            const obFilter = document.getElementById('obFilterOffice');
+            if (obFilter && obFilter.children.length <= 1) {
+                obFilter.innerHTML = `<option value="ALL">-- Tampilkan Semua (17 Kantor) --</option>` + 
+                    allOfficesList.map(off => `<option value="${off}">${off}</option>`).join('');
+            }
+        }
+
+        function renderMobileOBList() {
+            const container = document.getElementById('mobileOBInspectionContainer');
+            const selectedOffice = document.getElementById('obFilterOffice').value;
+
+            const filteredAssets = selectedOffice === 'ALL' 
+                ? globalAssets 
+                : globalAssets.filter(a => a.location === selectedOffice);
+
+            if (filteredAssets.length === 0) {
+                container.innerHTML = `<div class="bg-white p-6 rounded-xl text-center text-slate-400 text-xs shadow-sm border border-slate-200">Tidak ada aset terdaftar pada kantor ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = filteredAssets.map((a) => {
+                const realIndex = globalAssets.findIndex(item => item.code === a.code);
+                const isSeptic = (a.category || '').toLowerCase().includes('septic tank');
+
+                return `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 text-xs">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold text-[10px]"><i class="fa-solid fa-location-dot mr-1"></i>${a.location}</span>
+                                <div class="flex items-center space-x-2 mt-1.5">
+                                    <span class="font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-semibold">${a.code}</span>
+                                    <h4 class="font-bold text-slate-800 text-sm">${a.name}</h4>
+                                </div>
+                                <p class="text-slate-500 mt-0.5">${a.category || '-'}</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}">${a.condition}</span>
+                        </div>
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <label class="block font-semibold text-slate-700">Pilih Kondisi Hasil Inspeksi:</label>
+                            <select id="ob-cond-${realIndex}" class="w-full border border-slate-300 rounded-lg p-2 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                                ${isSeptic ? `
+                                    <option value="Baik" ${a.condition === 'Baik' ? 'selected' : ''}>Baik</option>
+                                    <option value="Perlu di sedot" ${a.condition === 'Perlu di sedot' ? 'selected' : ''}>Perlu di sedot</option>
+                                ` : `
+                                    <option value="Baik" ${a.condition === 'Baik' ? 'selected' : ''}>Baik</option>
+                                    <option value="Perlu perbaikan" ${a.condition === 'Perlu perbaikan' ? 'selected' : ''}>Perlu perbaikan</option>
+                                    <option value="Mati" ${a.condition === 'Mati' ? 'selected' : ''}>Mati</option>
+                                `}
+                            </select>
+                            <input type="text" id="ob-note-${realIndex}" placeholder="Catatan kondisi lapangan (opsional)..." class="w-full border border-slate-300 rounded-lg p-2 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button onclick="submitOBInspection(${realIndex})" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-lg font-bold transition shadow-md flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Kirim Laporan OB (Update Live)</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function submitOBInspection(index) {
+            const asset = globalAssets[index];
+            const condSelect = document.getElementById(`ob-cond-${index}`);
+            const noteInput = document.getElementById(`ob-note-${index}`);
+            
+            const condition = condSelect.value;
+            const note = noteInput ? noteInput.value.trim() || 'Inspeksi rutin OB' : 'Inspeksi rutin OB';
+            asset.condition = condition;
+
+            globalReports.unshift({
+                timestamp: new Date().toLocaleString('id-ID'),
+                type: 'INSPECTION_OB',
+                assetCode: asset.code,
+                assetName: asset.name,
+                location: asset.location,
+                inspector: 'Petugas OB',
+                result: condition === 'Baik' ? 'Baik & Normal' : condition,
+                note: note
+            });
+
+            if (condition !== 'Baik') {
+                const existingActive = globalRepairs.find(r => r.assetCode === asset.code && r.status === 'Aktif');
+                if (!existingActive) {
+                    globalRepairs.unshift({
+                        time: new Date().toLocaleString('id-ID'),
+                        assetCode: asset.code,
+                        asset: asset.name,
+                        location: asset.location,
+                        note: `Inspeksi Mobile OB: ${condition} - "${note}"`,
+                        status: 'Aktif'
+                    });
+                }
+            }
+
+            // Simpan ke Firebase Cloud (jika terhubung)
+            if (db) {
+                db.ref('ga_data').set({
+                    assets: globalAssets,
+                    reports: globalReports,
+                    repairs: globalRepairs
+                }).then(() => {
+                    alert(`✓ Laporan Inspeksi ${asset.name} berhasil terkirim!`);
+                });
+            } else {
+                renderMobileOBList();
+                alert(`✓ Laporan Inspeksi ${asset.name} berhasil diupdate secara lokal.`);
+            }
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
