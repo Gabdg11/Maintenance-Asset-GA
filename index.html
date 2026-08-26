@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GA PC Dashboard - Integrated Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SDK Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- SDK EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex h-screen overflow-hidden">
+
+    <!-- Sidebar Admin GA (Khusus PC) -->
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between hidden md:flex">
+        <div>
+            <div class="p-4 border-b border-slate-800 flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2.5 rounded-xl font-bold text-lg"><i class="fa-solid fa-building-shield"></i></div>
+                <div>
+                    <h1 class="font-bold text-white text-sm">GA PC System</h1>
+                    <p class="text-[10px] text-slate-400">Full Access Administrator</p>
+                </div>
+            </div>
+            <nav class="p-4 space-y-1 text-sm">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full text-left px-3.5 py-2.5 rounded-lg bg-blue-600 text-white font-medium flex items-center space-x-3"><i class="fa-solid fa-chart-pie w-5"></i><span>Dasbor GA</span></button>
+                <button onclick="switchTab('assets')" id="nav-assets" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-boxes-stacked w-5"></i><span>Daftar Aset</span></button>
+                <button onclick="switchTab('offices')" id="nav-offices" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-map-location-dot w-5"></i><span>19 Kantor</span></button>
+                <button onclick="switchTab('pm')" id="nav-pm" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-calendar-check w-5"></i><span>Inspeksi & PM</span></button>
+                <button onclick="switchTab('repair')" id="nav-repair" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-triangle-exclamation w-5"></i><span>Tugas Perbaikan</span></button>
+                <button onclick="switchTab('reports')" id="nav-reports" class="w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3"><i class="fa-solid fa-file-lines w-5"></i><span>Laporan & Log Audit</span></button>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+            <span>Role: Admin GA</span>
+            <button onclick="resetSystemData()" class="text-rose-400 hover:underline flex items-center gap-1" title="Reset Data Sistem"><i class="fa-solid fa-rotate-right"></i> Reset Cloud</button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Top Navbar -->
+        <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center space-x-3">
+                <h2 id="pageTitle" class="font-bold text-slate-800 text-lg">Dasbor GA & Statistik</h2>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-full font-semibold flex items-center space-x-1.5 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Firebase Cloud & EmailJS Live Sync</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Panels (Admin GA) -->
+        <main id="adminMainContent" class="flex-1 overflow-y-auto p-6 bg-slate-50">
+            
+            <!-- PANEL: DASHBOARD -->
+            <section id="panel-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-blue-50 text-blue-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Total Aset Terdaftar</p>
+                            <h3 id="statTotalAssets" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-emerald-50 text-emerald-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Kondisi Baik</p>
+                            <h3 id="statGoodAssets" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-amber-50 text-amber-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-clock"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Servis Jatuh Tempo</p>
+                            <h3 id="statDueService" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="bg-rose-50 text-rose-600 p-3 rounded-lg text-lg"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Tiket Perbaikan Aktif</p>
+                            <h3 id="statActiveRepairs" class="text-xl font-bold text-slate-800">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center"><i class="fa-solid fa-bolt text-blue-600 mr-2"></i>Aktivitas Terbaru & Laporan Mobile OB Live</h3>
+                        <span class="text-[11px] bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded">Realtime Sync</span>
+                    </div>
+                    <div id="dashboardRecentActivity" class="space-y-2 text-sm text-slate-600">
+                        <p class="text-slate-400 text-xs">Belum ada aktivitas masuk.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PANEL: ASSETS -->
+            <section id="panel-assets" class="space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Master Data Aset Kantor</h3>
+                    <button onclick="openAddAssetModal()" class="bg-blue-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold hover:bg-blue-700 shadow-sm flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Tambah Aset</span></button>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Kode / Nama Aset</th>
+                                <th class="p-3">Lokasi Kantor</th>
+                                <th class="p-3">Kategori</th>
+                                <th class="p-3">Kondisi</th>
+                                <th class="p-3">Jadwal Servis Berikutnya</th>
+                                <th class="p-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assetTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PANEL: OFFICES -->
+            <section id="panel-offices" class="space-y-4 hidden">
+                <h3 class="font-bold text-slate-800">Pemantauan 19 Kantor Cabang</h3>
+                <div id="officeCardsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </section>
+
+            <!-- PANEL: PM INSPECTION -->
+            <section id="panel-pm" class="space-y-4 hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <h3 class="font-bold text-slate-800">Pusat Inspeksi & Preventive Maintenance (PM)</h3>
+                    <div class="w-full md:w-72">
+                        <select id="pmFilterOffice" onchange="renderAll()" class="w-full border border-slate-300 p-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium shadow-sm">
+                            <option value="ALL">-- Filter Kantor (Tampilkan Semua) --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <p class="text-xs text-slate-500">Form inspeksi lengkap untuk Admin GA. Hasil yang dikirim oleh OB di mobile web juga ter-update otomatis di bawah ini:</p>
+                    <div id="pmInspectionList" class="space-y-4"></div>
+                </div>
+            </section>
+
+            <!-- PANEL: REPAIR TASKS -->
+            <section id="panel-repair" class="space-y-4 hidden">
+                <h3 class="font-bold text-slate-800">Tiket Tugas Perbaikan & Servis Rutin Aktif</h3>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Waktu Laporan</th>
+                                <th class="p-3">Aset & Lokasi</th>
+                                <th class="p-3">Kendala / Keterangan</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="repairTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PANEL: REPORTS -->
+            <section id="panel-reports" class="space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Pusat Laporan & Log Audit</h3>
+                    <button onclick="exportReportsCSV()" class="bg-emerald-600 text-white px-3.5 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 shadow-sm flex items-center space-x-1.5"><i class="fa-solid fa-file-excel"></i><span>Ekspor CSV</span></button>
+                </div>
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">Waktu</th>
+                                <th class="p-3">Tipe</th>
+                                <th class="p-3">Aset</th>
+                                <th class="p-3">Lokasi</th>
+                                <th class="p-3">Petugas</th>
+                                <th class="p-3">Hasil / Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal Tambah Aset Manual -->
+    <div id="addAssetModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md space-y-4 shadow-xl">
+            <h3 class="font-bold text-slate-800 text-base border-b pb-2"><i class="fa-solid fa-plus-circle text-blue-600 mr-2"></i>Form Input Aset Baru</h3>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Kode Aset:</label>
+                    <input type="text" id="newCode" placeholder="Contoh: AC-KTG-002" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Nama Aset:</label>
+                    <input type="text" id="newName" placeholder="Contoh: AC Split Daikin 1.5 PK" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Lokasi Kantor:</label>
+                    <select id="newLocation" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Kategori Aset:</label>
+                    <input type="text" id="newCategory" list="categoryOptions" placeholder="Pilih dari daftar atau ketik kategori baru..." class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    <datalist id="categoryOptions">
+                        <option value="Air Conditioner AC">
+                        <option value="Genset Portable">
+                        <option value="Genset">
+                        <option value="Motor Operasional">
+                        <option value="Mobil Operasional">
+                        <option value="Septic Tank">
+                        <option value="APAR / Pemadam">
+                    </datalist>
+
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <button type="button" onclick="selectQuickCategory('Air Conditioner AC', '3')" class="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md font-medium">Air Conditioner AC</button>
+                        <button type="button" onclick="selectQuickCategory('Genset Portable', '3')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md font-medium">Genset Portable</button>
+                        <button type="button" onclick="selectQuickCategory('Septic Tank', '3')" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md font-medium">Septic Tank</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Jatuh Tempo Servis Rutin:</label>
+                    <select id="newServiceInterval" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="auto">Otomatis Sesuai Kategori</option>
+                        <option value="3">3 Bulan Sekali</option>
+                        <option value="6">6 Bulan Sekali</option>
+                        <option value="none">Tidak Perlu</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Tanggal Mulai Perawatan:</label>
+                    <input type="date" id="newDate" class="w-full border border-slate-300 p-2.5 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-3 border-t">
+                <button type="button" onclick="closeAddAssetModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition">Batal</button>
+                <button type="button" onclick="handleSaveAsset()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition">Simpan Aset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inisialisasi EmailJS dengan Public Key Anda
+        emailjs.init("RBBWijqZ4nBcp5Qo8");
+
+        // Pemetaan Email PIC Berdasarkan Kantor Cabang
+        const officeEmailMapping = {
+            'Karang Tinggal 27': 'filemon.megavision@hotmail.com',
+            'Aruman Cimahi': 'filemon.megavision@hotmail.com',
+            'BN 1': 'Ajisetyo347@gmail.com',
+            'BN 2': 'Ajisetyo347@gmail.com',
+            'BN 3': 'Ajisetyo347@gmail.com',
+            'Cipadung': 'egigunaww16@gmail.com',
+            'Baleendah': 'egigunaww16@gmail.com',
+            'Bango': 'amos.megavision@hotmail.com',
+            'Cifor': ['Amos.megavision@hotmail.com', 'Jeremi.megavision@hotmail.com'],
+            'Kedung Halang': ['Amos.megavision@hotmail.com', 'Jeremi.megavision@hotmail.com'],
+            'SO Tasikmalaya': 'Seja.megavision@hotmail.com',
+            'SO Cirebon': 'nano.megavision@hotmail.com',
+            'SO Karawang': 'andreas.megavision@hotmail.com',
+            'SO Depok': 'zeffanya.megavision@hotmail.com',
+            'SO Depok 2': 'zeffanya.megavision@hotmail.com',
+            'SO Bekasi Kota': 'lamtongam.megavision@hotmail.com',
+            'SO Bekasi Kabupaten': 'joshua.megavision@hotmail.com',
+            'SO Tangerang Selatan': 'tompo.megavision@hotmail.com',
+            'SO Tangerang Kota': 'giovanni.megavision@hotmail.com'
+        };
+
+        function sendNotificationEmail(locationName, subjectText, messageText) {
+            let targetEmail = officeEmailMapping[locationName] || "admin.ga@perusahaan.com";
+            
+            if (Array.isArray(targetEmail)) {
+                targetEmail = targetEmail.join(', ');
+            }
+
+            var templateParams = {
+                to_email: targetEmail,
+                subject: subjectText,
+                message: messageText,
+                name: "Admin GA Megavision",
+                email: "ga@megavision.net.id"
+            };
+
+            emailjs.send('service_yqhqzkys', 'template_zzn76o8', templateParams)
+                .then(function(response) {
+                    console.log('Email Notifikasi Berhasil Terkirim ke ' + targetEmail, response.status, response.text);
+                }, function(error) {
+                    console.error('Gagal Mengirim Email:', error);
+                    alert('Gagal mengirim email notifikasi ke ' + targetEmail + '. Cek Console (F12) untuk detail error.');
+                });
+        }
+
+        // Konfigurasi Firebase Asli
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5lUCpypIJ_GXgRUedVKID7FpF8J-r2fQ",
+            authDomain: "management-asset-ga.firebaseapp.com",
+            databaseURL: "https://management-asset-ga-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "management-asset-ga",
+            storageBucket: "management-asset-ga.firebasestorage.app",
+            messagingSenderId: "590491043979",
+            appId: "1:590491043979:web:e4fe2633bf8e24ae27ac8e"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        const allOfficesList = [
+            'Karang Tinggal 27', 'Aruman Cimahi', 'Cipadung', 'Baleendah',
+            'BN 1', 'BN 2', 'BN 3', 'Cifor', 'Bango',
+            'SO Tasikmalaya', 'SO Cirebon', 'SO Karawang', 'SO Depok',
+            'SO Bekasi Kota', 'SO Bekasi Kabupaten', 'SO Tangerang Selatan', 'SO Tangerang Kota',
+            'SO Depok 2', 'Kedung Halang'
+        ];
+
+        let globalAssets = [];
+        let globalReports = [];
+        let globalRepairs = [];
+
+        function listenToRealtimeData() {
+            db.ref('ga_data').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    globalAssets = data.assets || [];
+                    globalReports = data.reports || [];
+                    globalRepairs = data.repairs || [];
+                } else {
+                    globalAssets = [
+                        { code: 'AC-KTG-001', name: 'AC Split 2PK', location: 'Karang Tinggal 27', category: 'Air Conditioner AC', condition: 'Baik', nextDate: '2026-11-24' },
+                        { code: 'ST-KTG-001', name: 'Septic Tank Utama', location: 'Karang Tinggal 27', category: 'Septic Tank', condition: 'Baik', nextDate: '2026-11-24' }
+                    ];
+                    globalReports = [];
+                    globalRepairs = [];
+                    saveDataToCloud();
+                }
+                renderAll();
+            });
+        }
+
+        function saveDataToCloud() {
+            db.ref('ga_data').set({
+                assets: globalAssets,
+                reports: globalReports,
+                repairs: globalRepairs
+            });
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'assets', 'offices', 'pm', 'repair', 'reports'].forEach(id => {
+                const panel = document.getElementById(`panel-${id}`);
+                const nav = document.getElementById(`nav-${id}`);
+                if (panel) panel.classList.add('hidden');
+                if (nav) nav.className = "w-full text-left px-3.5 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center space-x-3";
+            });
+            
+            const activePanel = document.getElementById(`panel-${tabId}`);
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activePanel) activePanel.classList.remove('hidden');
+            if (activeNav) activeNav.className = "w-full text-left px-3.5 py-2.5 rounded-lg bg-blue-600 text-white font-medium flex items-center space-x-3";
+            
+            const titles = {
+                dashboard: 'Dasbor GA & Statistik Live',
+                assets: 'Daftar Master Aset Kantor',
+                offices: 'Pemantauan 19 Kantor Cabang',
+                pm: 'Inspeksi & Preventive Maintenance',
+                repair: 'Tiket Perbaikan & Servis Rutin',
+                reports: 'Pusat Laporan & Log Audit'
+            };
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle && titles[tabId]) pageTitle.innerText = titles[tabId];
+        }
+
+        function selectQuickCategory(categoryName, intervalValue) {
+            document.getElementById('newCategory').value = categoryName;
+            document.getElementById('newServiceInterval').value = intervalValue;
+        }
+
+        function calculateNextServiceDate(category, baseDateStr, intervalChoice) {
+            let d = baseDateStr ? new Date(baseDateStr) : new Date();
+            if (isNaN(d.getTime())) d = new Date();
+
+            if (intervalChoice === '3') {
+                d.setMonth(d.getMonth() + 3);
+                return d.toISOString().split('T')[0];
+            } else if (intervalChoice === '6') {
+                d.setMonth(d.getMonth() + 6);
+                return d.toISOString().split('T')[0];
+            } else if (intervalChoice === 'none') {
+                return 'Tidak Ada / Sesuai Kebutuhan';
+            }
+
+            const catLower = (category || '').toLowerCase();
+            if (catLower.includes('ac') || catLower.includes('genset portable') || catLower.includes('motor') || catLower.includes('septic')) {
+                d.setMonth(d.getMonth() + 3);
+            } else if (catLower.includes('genset') || catLower.includes('mobil')) {
+                d.setMonth(d.getMonth() + 6);
+            } else {
+                return 'Tidak Ada / Sesuai Kebutuhan';
+            }
+            return d.toISOString().split('T')[0];
+        }
+
+        function resetSystemData() {
+            if(confirm("Apakah Anda yakin ingin mereset seluruh data di Cloud Database?")) {
+                globalAssets = [
+                    { code: 'AC-KTG-001', name: 'AC Split 2PK', location: 'Karang Tinggal 27', category: 'Air Conditioner AC', condition: 'Baik', nextDate: '2026-11-24' }
+                ];
+                globalReports = [];
+                globalRepairs = [];
+                saveDataToCloud();
+                alert("Database Cloud berhasil direset.");
+            }
+        }
+
+        function renderAll() {
+            document.getElementById('statTotalAssets').innerText = globalAssets.length;
+            document.getElementById('statGoodAssets').innerText = globalAssets.filter(a => a.condition === 'Baik').length;
+            document.getElementById('statDueService').innerText = globalAssets.filter(a => a.condition !== 'Baik').length;
+            document.getElementById('statActiveRepairs').innerText = globalRepairs.filter(r => r.status === 'Aktif').length;
+
+            const recentContainer = document.getElementById('dashboardRecentActivity');
+            if (recentContainer) {
+                if (globalReports.length === 0) {
+                    recentContainer.innerHTML = `<p class="text-slate-400 text-xs italic">Belum ada aktivitas masuk.</p>`;
+                } else {
+                    recentContainer.innerHTML = globalReports.slice(0, 6).map(r => `
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-100 flex justify-between items-center text-xs">
+                            <div>
+                                <span class="font-bold text-slate-800">${r.assetName}</span> di <span class="text-blue-600 font-semibold">${r.location}</span> 
+                                <span class="text-slate-400">(${r.inspector})</span>
+                                <p class="text-slate-500 italic mt-0.5">"${r.note}"</p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${r.result.includes('Baik') || r.result.includes('Terdaftar') ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${r.result}</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            const assetTableBody = document.getElementById('assetTableBody');
+            if (assetTableBody) {
+                assetTableBody.innerHTML = globalAssets.map((a, index) => `
+                    <tr class="hover:bg-slate-50 text-xs">
+                        <td class="p-3"><span class="font-bold text-slate-800">${a.name}</span><br><span class="text-[10px] font-mono text-slate-400">${a.code}</span></td>
+                        <td class="p-3 text-slate-600 font-medium">${a.location}</td>
+                        <td class="p-3 text-slate-600">${a.category || '-'}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${a.condition}</span></td>
+                        <td class="p-3 text-slate-600 font-medium">${a.nextDate || '-'}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="deleteAsset(${index})" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded transition" title="Hapus Aset"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const officeCardsGrid = document.getElementById('officeCardsGrid');
+            if (officeCardsGrid) {
+                officeCardsGrid.innerHTML = allOfficesList.map(off => {
+                    const count = globalAssets.filter(a => a.location === off).length;
+                    return `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                            <h4 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-building text-blue-600 mr-2"></i>${off}</h4>
+                            <p class="text-xs text-slate-500">Jumlah Aset Terdaftar: <strong class="text-slate-800">${count} unit</strong></p>
+                            <span class="inline-block text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">Status: Operasional Normal</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const pmFilter = document.getElementById('pmFilterOffice');
+            if (pmFilter && pmFilter.children.length <= 1) {
+                pmFilter.innerHTML = `<option value="ALL">-- Filter Kantor (Tampilkan Semua) --</option>` + allOfficesList.map(off => `<option value="${off}">${off}</option>`).join('');
+            }
+            const selectedPmOffice = pmFilter ? pmFilter.value : 'ALL';
+
+            const pmInspectionList = document.getElementById('pmInspectionList');
+            if (pmInspectionList) {
+                let assetsToInspect = selectedPmOffice === 'ALL' ? globalAssets : globalAssets.filter(a => a.location === selectedPmOffice);
+
+                const groupedByOffice = {};
+                assetsToInspect.forEach((a) => {
+                    const realIndex = globalAssets.findIndex(item => item.code === a.code);
+                    if (!groupedByOffice[a.location]) groupedByOffice[a.location] = [];
+                    groupedByOffice[a.location].push({ ...a, originalIndex: realIndex });
+                });
+
+                const officeKeys = Object.keys(groupedByOffice);
+                if (officeKeys.length === 0) {
+                    pmInspectionList.innerHTML = `<div class="bg-white p-6 rounded-xl border border-slate-200 text-center text-slate-400 text-xs">Tidak ada aset terdaftar pada filter kantor ini.</div>`;
+                } else {
+                    pmInspectionList.innerHTML = officeKeys.map(officeName => {
+                        const assetsInOffice = groupedByOffice[officeName];
+                        return `
+                            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center">
+                                    <h4 class="font-bold text-slate-800 text-xs flex items-center">
+                                        <i class="fa-solid fa-building text-blue-600 mr-2"></i>${officeName}
+                                    </h4>
+                                    <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold">${assetsInOffice.length} Aset</span>
+                                </div>
+                                <div class="p-4 space-y-3">
+                                    ${assetsInOffice.map(a => {
+                                        const index = a.originalIndex;
+                                        const isSeptic = (a.category || '').toLowerCase().includes('septic tank');
+                                        return `
+                                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <span class="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">${a.code}</span>
+                                                            <strong class="text-slate-800 text-sm">${a.name}</strong>
+                                                        </div>
+                                                        <div class="text-blue-600 font-medium mt-0.5">${a.category || '-'}</div>
+                                                    </div>
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.condition === 'Baik' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${a.condition}</span>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200">
+                                                    <label class="font-semibold text-slate-700">Set Kondisi:</label>
+                                                    <select id="inspect-cond-${index}" class="border border-slate-300 rounded-lg p-1.5 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                                        ${isSeptic ? `
+                                                            <option value="Baik" ${a.condition === 'Baik' ? 'selected' : ''}>Baik</option>
+                                                            <option value="Perlu di sedot" ${a.condition === 'Perlu di sedot' ? 'selected' : ''}>Perlu di sedot</option>
+                                                        ` : `
+                                                            <option value="Baik" ${a.condition === 'Baik' ? 'selected' : ''}>Baik</option>
+                                                            <option value="Perlu perbaikan" ${a.condition === 'Perlu perbaikan' ? 'selected' : ''}>Perlu perbaikan</option>
+                                                            <option value="Mati" ${a.condition === 'Mati' ? 'selected' : ''}>Mati</option>
+                                                        `}
+                                                    </select>
+                                                    <input type="text" id="inspect-note-${index}" placeholder="Catatan Admin GA..." class="flex-1 border border-slate-300 rounded-lg p-1.5 bg-white text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]">
+                                                    <button onclick="submitAdminInspection(${index})" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Simpan</button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            const repairTableBody = document.getElementById('repairTableBody');
+            if (repairTableBody) {
+                if (globalRepairs.length === 0) {
+                    repairTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400 text-xs">Belum ada tugas perbaikan aktif.</td></tr>`;
+                } else {
+                    repairTableBody.innerHTML = globalRepairs.map((r, idx) => `
+                        <tr class="hover:bg-slate-50 text-xs">
+                            <td class="p-3 text-slate-500">${r.time}</td>
+                            <td class="p-3"><span class="font-bold text-slate-800">${r.asset}</span><br><span class="text-slate-400">${r.location}</span></td>
+                            <td class="p-3 text-slate-600 italic">"${r.note}"</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${r.status === 'Aktif' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">${r.status}</span></td>
+                            <td class="p-3">
+                                ${r.status === 'Aktif' ? `<button onclick="resolveRepair(${idx})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold transition">Selesaikan</button>` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const reportsTableBody = document.getElementById('reportsTableBody');
+            if (reportsTableBody) {
+                reportsTableBody.innerHTML = globalReports.map(r => `
+                    <tr class="hover:bg-slate-50 text-xs">
+                        <td class="p-3 text-slate-500">${r.timestamp}</td>
+                        <td class="p-3"><span class="font-bold ${r.inspector === 'Petugas OB' ? 'text-indigo-600' : 'text-blue-600'}">${r.type}</span></td>
+                        <td class="p-3 font-semibold text-slate-800">${r.assetName}</td>
+                        <td class="p-3 text-slate-600">${r.location}</td>
+                        <td class="p-3 font-semibold ${r.inspector === 'Petugas OB' ? 'text-indigo-600' : 'text-slate-700'}">${r.inspector}</td>
+                        <td class="p-3 text-slate-700">${r.result} <br><em class="text-slate-400">"${r.note}"</em></td>
+                    </tr>
+                `).join('');
+            }
+
+            const newLocSelect = document.getElementById('newLocation');
+            if (newLocSelect && newLocSelect.children.length === 0) {
+                newLocSelect.innerHTML = allOfficesList.map(off => `<option value="${off}">${off}</option>`).join('');
+            }
+        }
+
+        function submitAdminInspection(index) {
+            const asset = globalAssets[index];
+            const condSelect = document.getElementById(`inspect-cond-${index}`);
+            const noteInput = document.getElementById(`inspect-note-${index}`);
+            
+            const condition = condSelect.value;
+            const note = noteInput ? noteInput.value.trim() || 'Inspeksi GA Admin' : 'Inspeksi GA Admin';
+            
+            asset.condition = condition;
+            
+            let reportResult = '';
+            let isRepairNeeded = false;
+            
+            if (condition === 'Baik') {
+                asset.nextDate = calculateNextServiceDate(asset.category, new Date(), 'auto');
+                reportResult = 'Baik & Normal';
+            } else {
+                reportResult = condition;
+                isRepairNeeded = true;
+            }
+
+            globalReports.unshift({
+                timestamp: new Date().toLocaleString('id-ID'),
+                type: 'INSPECTION_GA',
+                assetCode: asset.code,
+                assetName: asset.name,
+                location: asset.location,
+                inspector: 'Admin GA',
+                result: reportResult,
+                note: note
+            });
+
+            if (isRepairNeeded) {
+                const existingActive = globalRepairs.find(r => r.assetCode === asset.code && r.status === 'Aktif');
+                if (!existingActive) {
+                    globalRepairs.unshift({
+                        time: new Date().toLocaleString('id-ID'),
+                        assetCode: asset.code,
+                        asset: asset.name,
+                        location: asset.location,
+                        note: `Inspeksi GA: ${condition} - "${note}"`,
+                        status: 'Aktif'
+                    });
+
+                    // KIRIM EMAIL OTOMATIS BERDASARKAN LOKASI KANTOR ASET
+                    const emailSubject = `[URGENT] Laporan Kerusakan / Kendala Aset - ${asset.location}`;
+                    const emailBody = `Halo Tim GA,\n\nTelah dilaporkan kendala/kerusakan pada aset berikut:\n\n- Nama Aset: ${asset.name} (${asset.code})\n- Lokasi Kantor: ${asset.location}\n- Kondisi / Kendala: ${condition}\n- Keterangan: ${note}\n- Waktu Laporan: ${new Date().toLocaleString('id-ID')}\n\nMohon segera ditindaklanjuti.\n\nTerima kasih,\nSistem Manajemen Aset GA`;
+                    
+                    sendNotificationEmail(asset.location, emailSubject, emailBody);
+                }
+            }
+
+            saveDataToCloud();
+            alert("✓ Pembaharuan inspeksi GA berhasil tersimpan di Cloud.");
+        }
+
+        function resolveRepair(idx) {
+            const repair = globalRepairs[idx];
+            if (repair) {
+                repair.status = 'Selesai';
+                
+                const asset = globalAssets.find(a => a.code === repair.assetCode);
+                if (asset) {
+                    asset.condition = 'Baik';
+                    asset.nextDate = calculateNextServiceDate(asset.category, new Date(), 'auto');
+                }
+
+                globalReports.unshift({
+                    timestamp: new Date().toLocaleString('id-ID'),
+                    type: 'REPAIR_RESOLVED',
+                    assetCode: repair.assetCode || '-',
+                    assetName: repair.asset,
+                    location: repair.location,
+                    inspector: 'Admin GA',
+                    result: 'Perbaikan Selesai',
+                    note: 'Tugas perbaikan/servis diselesaikan oleh Admin GA'
+                });
+
+                saveDataToCloud();
+                alert("✓ Tugas perbaikan telah diselesaikan.");
+            }
+        }
+
+        function openAddAssetModal() { 
+            const modal = document.getElementById('addAssetModal');
+            if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+            document.getElementById('newDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('newServiceInterval').value = 'auto';
+        }
+
+        function closeAddAssetModal() { 
+            const modal = document.getElementById('addAssetModal');
+            if (modal) { modal.classList.remove('flex'); modal.classList.add('hidden'); }
+        }
+        
+        function handleSaveAsset() {
+            const code = document.getElementById('newCode').value.trim();
+            const name = document.getElementById('newName').value.trim();
+            const location = document.getElementById('newLocation').value;
+            const category = document.getElementById('newCategory').value.trim();
+            const intervalChoice = document.getElementById('newServiceInterval').value;
+            const inputDate = document.getElementById('newDate').value;
+
+            if (!code || !name || !category) { 
+                alert('Mohon lengkapi Kode Aset, Nama Aset, dan Kategori!'); 
+                return; 
+            }
+
+            const nextDate = calculateNextServiceDate(category, inputDate, intervalChoice);
+
+            globalAssets.push({ code, name, location, category, condition: 'Baik', nextDate });
+            
+            globalReports.unshift({
+                timestamp: new Date().toLocaleString('id-ID'),
+                type: 'NEW_ASSET',
+                assetCode: code,
+                assetName: name,
+                location: location,
+                inspector: 'Admin GA',
+                result: 'Terdaftar',
+                note: `Master aset baru kategori ${category}`
+            });
+
+            saveDataToCloud();
+            closeAddAssetModal();
+            document.getElementById('newCode').value = '';
+            document.getElementById('newName').value = '';
+            document.getElementById('newCategory').value = '';
+
+            alert("✓ Master Aset Baru berhasil ditambahkan ke Cloud.");
+        }
+
+        function deleteAsset(index) {
+            if(confirm("Apakah Anda yakin ingin menghapus aset ini dari sistem cloud?")) {
+                globalAssets.splice(index, 1);
+                saveDataToCloud();
+            }
+        }
+
+        function exportReportsCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Waktu,Tipe,Nama Aset,Lokasi,Petugas,Hasil\n";
+            globalReports.forEach(r => {
+                csvContent += `"${r.timestamp}","${r.type}","${r.assetName}","${r.location}","${r.inspector}","${r.result}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "laporan_ga_mobile_integrated.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.onload = listenToRealtimeData;
+    </script>
+</body>
+</html>
