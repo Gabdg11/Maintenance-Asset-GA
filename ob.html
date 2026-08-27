@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GA Mobile Inspection (OB / Mobile)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SDK Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <!-- SDK EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 pb-12">
+
+    <!-- Header Mobile -->
+    <header class="bg-blue-600 text-white p-4 sticky top-0 z-50 shadow-md">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Mobile OB GA
+                </h1>
+                <p class="text-[11px] text-blue-100">Sistem Inspeksi & Lapangan</p>
+            </div>
+            <span class="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded-full font-bold animate-pulse flex items-center gap-1">
+                <i class="fa-solid fa-wifi"></i> Live Cloud & Email Sync
+            </span>
+        </div>
+    </header>
+
+    <div class="p-4 max-w-md mx-auto space-y-4">
+
+        <!-- Filter Pilih Lokasi Kantor -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <label class="block text-xs font-bold text-slate-700">Pilih Lokasi Kantor Anda saat ini:</label>
+            <select id="mobileOfficeSelect" onchange="renderMobileList()" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- TAMPILKAN SEMUA KANTOR --</option>
+            </select>
+        </div>
+
+        <!-- Daftar Aset yang Harus Diperiksa OB -->
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-slate-800 text-sm">Daftar Aset Terdaftar</h2>
+                <span id="assetCountBadge" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-bold">0 Aset</span>
+            </div>
+            <div id="mobileAssetList" class="space-y-3">
+                <div class="bg-white p-4 rounded-xl text-center text-slate-400 text-xs shadow-sm">
+                    Memuat data dari Cloud...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inisialisasi EmailJS dengan Public Key Anda
+        emailjs.init("RBBWijqZ4nBcp5Qo8");
+
+        // Pemetaan Email PIC Berdasarkan Kantor Cabang
+        const officeEmailMapping = {
+            'Karang Tinggal 27': 'filemon.megavision@hotmail.com',
+            'Aruman Cimahi': 'filemon.megavision@hotmail.com',
+            'BN 1': 'Ajisetyo347@gmail.com',
+            'BN 2': 'Ajisetyo347@gmail.com',
+            'BN 3': 'Ajisetyo347@gmail.com',
+            'Cipadung': 'egigunaww16@gmail.com',
+            'Baleendah': 'egigunaww16@gmail.com',
+            'Bango': ['Amos.megavision@hotmail.com', 'Jeremi.megavision@hotmail.com'],
+            'Cifor': ['Amos.megavision@hotmail.com', 'Jeremi.megavision@hotmail.com'],
+            'Kedung Halang': ['Amos.megavision@hotmail.com', 'Jeremi.megavision@hotmail.com'],
+            'SO Tasikmalaya': 'Seja.megavision@hotmail.com',
+            'SO Cirebon': 'nano.megavision@hotmail.com',
+            'SO Karawang': 'andreas.megavision@hotmail.com',
+            'SO Depok': 'zeffanya.megavision@hotmail.com',
+            'SO Depok 2': 'zeffanya.megavision@hotmail.com',
+            'SO Bekasi Kota': 'lamtongam.megavision@hotmail.com',
+            'SO Bekasi Kabupaten': 'joshua.megavision@hotmail.com',
+            'SO Tangerang Selatan': 'tompo.megavision@hotmail.com',
+            'SO Tangerang Kota': 'giovanni.megavision@hotmail.com'
+        };
+
+        function sendNotificationEmail(locationName, subjectText, messageText) {
+            let targetEmail = officeEmailMapping[locationName] || "admin.ga@perusahaan.com";
+            
+            if (Array.isArray(targetEmail)) {
+                targetEmail = targetEmail.join(', ');
+            }
+
+            var templateParams = {
+                to_email: targetEmail,
+                subject: subjectText,
+                message: messageText,
+                name: "Petugas OB Lapangan",
+                email: "ga.mobile@megavision.net.id"
+            };
+
+            emailjs.send('service_yqhzkys', 'template_zzn76o8', templateParams)
+                .then(function(response) {
+                    console.log('Email Notifikasi OB Berhasil Terkirim ke ' + targetEmail, response.status, response.text);
+                }, function(error) {
+                    console.error('Gagal Mengirim Email OB:', error);
+                });
+        }
+
+        // Konfigurasi Firebase Asli
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5lUCpypIJ_GXgRUedVKID7FpF8J-r2fQ",
+            authDomain: "management-asset-ga.firebaseapp.com",
+            databaseURL: "https://management-asset-ga-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "management-asset-ga",
+            storageBucket: "management-asset-ga.firebasestorage.app",
+            messagingSenderId: "590491043979",
+            appId: "1:590491043979:web:e4fe2633bf8e24ae27ac8e"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        const allOfficesList = [
+            'Karang Tinggal 27', 'Aruman Cimahi', 'Cipadung', 'Baleendah',
+            'BN 1', 'BN 2', 'BN 3', 'Cifor', 'Bango',
+            'SO Tasikmalaya', 'SO Cirebon', 'SO Karawang', 'SO Depok',
+            'SO Bekasi Kota', 'SO Bekasi Kabupaten', 'SO Tangerang Selatan', 'SO Tangerang Kota',
+            'SO Depok 2', 'Kedung Halang'
+        ];
+
+        let globalAssets = [];
+        let globalReports = [];
+        let globalRepairs = [];
+
+        function listenToRealtimeData() {
+            db.ref('ga_data').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    globalAssets = data.assets || [];
+                    globalReports = data.reports || [];
+                    globalRepairs = data.repairs || [];
+                }
+                populateOfficeOptions();
+                renderMobileList();
+            });
+        }
+
+        function saveDataToCloud() {
+            db.ref('ga_data').set({
+                assets: globalAssets,
+                reports: globalReports,
+                repairs: globalRepairs
+            });
+        }
+
+        function populateOfficeOptions() {
+            const select = document.getElementById('mobileOfficeSelect');
+            if (select && select.children.length <= 1) {
+                allOfficesList.forEach(off => {
+                    const opt = document.createElement('option');
+                    opt.value = off;
+                    opt.innerText = off;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function renderMobileList() {
+            const selectedOffice = document.getElementById('mobileOfficeSelect').value;
+            const container = document.getElementById('mobileAssetList');
+            
+            let filtered = selectedOffice ? globalAssets.filter(a => a.location === selectedOffice) : globalAssets;
+            document.getElementById('assetCountBadge').innerText = `${filtered.length} Aset`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="bg-white p-6 rounded-xl text-center text-slate-400 text-xs shadow-sm">Belum ada aset terdaftar pada kantor ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map((asset) => {
+                const realIndex = globalAssets.findIndex(a => a.code === asset.code);
+                const isSeptic = (asset.category || '').toLowerCase().includes('septic tank');
+                
+                const hasActiveRepair = globalRepairs.some(r => r.assetCode === asset.code && r.status === 'Aktif');
+                const isDamaged = asset.condition !== 'Baik' || hasActiveRepair;
+
+                return `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${asset.code}</span>
+                                <h3 class="font-bold text-slate-800 text-sm mt-1">${asset.name}</h3>
+                                <p class="text-xs text-blue-600 font-medium">${asset.location} • <span class="text-slate-500">${asset.category || '-'}</span></p>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${!isDamaged ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${asset.condition}
+                            </span>
+                        </div>
+
+                        ${isDamaged ? `
+                            <div class="bg-rose-50 border border-rose-200 p-3 rounded-lg text-xs text-rose-700 space-y-1">
+                                <div class="font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-lock"></i> Aset Dalam Perbaikan / Rusak
+                                </div>
+                                <p class="text-[11px] text-rose-600">
+                                    Status dikunci. Hanya Admin GA di Web PC yang dapat mengubah kembali status menjadi "Baik" setelah perbaikan diselesaikan.
+                                </p>
+                            </div>
+                        ` : `
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2 text-xs">
+                                <label class="font-bold text-slate-700 block">Laporkan Kondisi Terbaru:</label>
+                                <select id="ob-cond-${realIndex}" class="w-full border border-slate-300 p-2 rounded-lg bg-white font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                                    ${isSeptic ? `
+                                        <option value="Baik">Kondisi Baik / Normal</option>
+                                        <option value="Perlu di sedot">Penuh (Perlu di-sedot)</option>
+                                    ` : `
+                                        <option value="Baik">Kondisi Baik / Normal</option>
+                                        <option value="Perlu perbaikan">Rusak (Perlu Perbaikan)</option>
+                                        <option value="Mati">Mati Total</option>
+                                    `}
+                                </select>
+                                <input type="text" id="ob-note-${realIndex}" placeholder="Catatan/Keterangan OB..." class="w-full border border-slate-300 p-2 rounded-lg bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                                <button onclick="submitObReport(${realIndex})" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition shadow-sm flex justify-center items-center gap-1.5">
+                                    <i class="fa-solid fa-paper-plane"></i> Kirim Laporan ke Admin PC
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function submitObReport(index) {
+            const asset = globalAssets[index];
+            const condSelect = document.getElementById(`ob-cond-${index}`);
+            const noteInput = document.getElementById(`ob-note-${index}`);
+
+            const newCondition = condSelect.value;
+            const note = noteInput ? noteInput.value.trim() || 'Pemeriksaan rutin OB' : 'Pemeriksaan rutin OB';
+
+            asset.condition = newCondition;
+
+            globalReports.unshift({
+                timestamp: new Date().toLocaleString('id-ID'),
+                type: 'INSPECTION_OB',
+                assetCode: asset.code,
+                assetName: asset.name,
+                location: asset.location,
+                inspector: 'Petugas OB',
+                result: newCondition,
+                note: note
+            });
+
+            if (newCondition !== 'Baik') {
+                const existingActive = globalRepairs.some(r => r.assetCode === asset.code && r.status === 'Aktif');
+                if (!existingActive) {
+                    globalRepairs.unshift({
+                        time: new Date().toLocaleString('id-ID'),
+                        assetCode: asset.code,
+                        asset: asset.name,
+                        location: asset.location,
+                        note: `Laporan OB: ${newCondition} - "${note}"`,
+                        status: 'Aktif'
+                    });
+
+                    // Kirim Email Notifikasi Otomatis ke PIC Kantor Terkait
+                    const emailSubject = `[URGENT OB] Laporan Kendala Aset - ${asset.location}`;
+                    const emailBody = `Halo Tim GA,\n\nPetugas OB melaporkan kendala berikut dari lapangan:\n\n- Nama Aset: ${asset.name} (${asset.code})\n- Lokasi Kantor: ${asset.location}\n- Kondisi / Kendala: ${newCondition}\n- Catatan OB: ${note}\n- Waktu Laporan: ${new Date().toLocaleString('id-ID')}\n\nMohon segera diteruskan ke teknisi / ditindaklanjuti.\n\nTerima kasih,\nSistem Mobile GA`;
+                    
+                    sendNotificationEmail(asset.location, emailSubject, emailBody);
+                }
+            }
+
+            saveDataToCloud();
+            alert("✓ Laporan berhasil terkirim ke PC Admin dan Email PIC!");
+        }
+
+        window.onload = listenToRealtimeData;
+    </script>
+</body>
+</html>
